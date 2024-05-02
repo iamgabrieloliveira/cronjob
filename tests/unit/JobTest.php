@@ -6,6 +6,7 @@ use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\Filters\CITestStreamFilter;
 use Tests\Support\TestCase;
 use CodeIgniter\Test\StreamFilterTrait;
+use CodeIgniter\CLI\Commands;
 
 /**
  * @internal
@@ -155,5 +156,26 @@ final class JobTest extends TestCase
         // Should return the current time
         $this->assertInstanceOf(Time::class, $job->lastRun()); // @phpstan-ignore-line
         $this->assertSame($date, $job->lastRun()->format('Y-m-d H:i:s'));
+    }
+
+    public static function phpBinary(): string
+    {
+        return (new \Symfony\Component\Process\PhpExecutableFinder)->find(false);
+    }
+
+    public function buildCommand(string $command): string
+    {
+        return sprintf('%s spark %s', self::phpBinary(), $command);
+    }
+
+    public function testShouldNotRunInBackgroundByDefault(): void
+    {
+        $job = new Job('command', 'migrate:status');
+
+        $job->runInBackground();
+
+        $job->run();
+
+        die();
     }
 }

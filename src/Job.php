@@ -54,6 +54,13 @@ class Job
     protected string $runType = 'multiple';
 
     /**
+     * If the job will run as a background proccess
+     *
+     * @var bool
+     */
+    protected bool $runInBackground = false;
+
+    /**
      * The type of action.
      *
      * @var string
@@ -199,10 +206,21 @@ class Job
      */
     protected function runCommand(): string
     {
-        return command($this->getAction());
+        if (! $this->runInBackground) {
+            return command($this->getAction());
+        }
+
+        $command = sprintf('%s spark %s', self::phpBinary(), $this->getAction());
+
+        return exec($command);
     }
 
-    /**
+    public static function phpBinary(): string
+    {
+        return (new \Symfony\Component\Process\PhpExecutableFinder)->find(false);
+    }
+
+        /**
      * Executes a shell script.
      *
      * @return array Lines of output from exec
@@ -312,5 +330,32 @@ class Job
     public function getRunType(): string
     {
         return $this->runType;
+    }
+
+    /**
+     * Mark job to run in background
+     *
+     * @return $this
+     * @throws Exception
+     */
+    public function runInBackground(): Job
+    {
+        if ($this->type !== 'command') {
+            throw new \Exception('Only commands can be executed in background');
+        }
+
+        $this->runInBackground = true;
+
+        return $this;
+    }
+
+    /**
+     * If the job will run in the background
+     *
+     * @return bool
+     */
+    public function getRunInBackground(): bool
+    {
+        return $this->runInBackground;
     }
 }
